@@ -5,6 +5,7 @@ import time
 import math
 import multiprocessing,Queue
 from threading import Thread,Lock
+import threading as T
 
 DEBUG=True
 USE_DEBUGGER=True
@@ -163,10 +164,11 @@ def getTouch():
         state['color'] = obj['color']
         state['id'] = obj['id']
         print repr(state)
-        if obj['id'] not in users:
-            users[str(obj['id'])] = []
-        users[obj['id']].append(state)
-        print repr(state)
+        # if obj['id'] not in users:
+        #     users[str(obj['id'])] = []
+        # users[obj['id']].append(state)
+        # print repr(state)
+        sendEffect(state)
         return json.jsonify(state)
     except Exception as e:
         print repr(e)
@@ -183,13 +185,37 @@ bg_thread.start()
 
 effectRunning = Lock()
 
+events = Queue.Queue(10)
+
+def drawEvents():
+    print "drawEvents"
+    while True:
+        try:
+            e = events.get(True,30)
+            print "got effect " + repr(e)
+            color = [float(x)/255.0 for x in e['color']]
+            x = int(float(e['x'])*len(panels))
+            with colorLock:
+                fade(0.95)
+                setColor(x,color)
+        except Queue.Empty:
+            return
+
 def runEffect(effect):
+    if type(effect) is dict:
+        print "Enqueuing " + repr(effect)
+        try:
+            events.put(effect,True,0.5)
+        except Queue.Full:
+            print repr(effect) + " Failed: don't have bridge"
+        return
     with effectRunning:
         print "Running " + str(effect)
         {
             'rgb':runRgb,
             'wave':wave,
-            'collide':collider
+            'collide':collider,
+            'events':drawEvents
         }[effect]()
         print "Done"
         off()

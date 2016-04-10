@@ -1,4 +1,7 @@
 $(function() {
+    $.get("/runeffect/events")
+})
+$(function() {
     
     // array of color choices
     var colors = ["red", "green", "orange", "purple"];
