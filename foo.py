@@ -143,8 +143,27 @@ def sendEffect(effect):
     effectQueue.put(effect)
     return ""
 
+users = {}
+
+@app.route('/touch/',methods=['POST'])
+def getTouch():
+    obj = request.args
+    try:
+        state = {}
+        state['x'] = obj['x']
+        state['vel'] = obj['speed']
+        state['type'] = obj['type']
+        state['color'] = obj['color']
+        state['id'] = obj['id']
+        if obj['id'] not in users:
+            users[obj]['id'] = []
+        users[obj['id']].append(state)
+        print repr(state)
+    except:
+        return Response("",400,{})
+
 def runFlask():
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0',threaded=True)
 
 multiprocessing.Process(target=runFlask).start()
 
@@ -163,11 +182,14 @@ def runEffect(effect):
             'collide':collider
         }[effect]()
         print "Done"
+        off()
 
 while True:
     try:
         x = effectQueue.get_nowait()
-        Thread(target=runEffect,args=[x]).start()
+        t = Thread(target=runEffect,args=[x])
+        t.setDaemon(True)
+        t.start()
     except Queue.Empty:
         pass
     time.sleep(0.1)
