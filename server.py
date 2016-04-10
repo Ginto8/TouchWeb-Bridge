@@ -149,8 +149,6 @@ def sendEffect(effect):
 def ui():
     return render_template("index.html")
 
-users = {}
-
 @app.route('/api/touch',methods=['POST'])
 def getTouch():
     print "getTouch"
@@ -187,17 +185,35 @@ effectRunning = Lock()
 
 events = Queue.Queue(50)
 
+pans = {}
+
+def colorMix(a,b):
+    gammaA,gammaB = [2**x-1 for x in a],[2**x-1 for x in b]
+    amax,bmax = max(gammaA),max(gammaB)
+    # norm = max(amax,bmax)
+    if bmax < 0.01:
+        return a
+    elif amax < 0.01:
+        return b
+    newcolor = [(a/amax)+(b/bmax) for a,b in zip(gammaA,gammaB)]
+    norm = max(newcolor)
+    if norm > 1:
+        newcolor = [min(1,c/norm) for c in newcolor]
+    return [math.log(x+1,2) for x in newcolor]
+
 def drawEvents():
     print "drawEvents"
     nothing = 0
     while nothing < 40*30:
         eventSet = []
+        now = time.time()
         while True:
             try:
                 for e in events.get_nowait():
                     color = [float(x)/255.0 for x in e['color']]
                     x = int(float(e['x'])*len(panels))
-                    eventSet.append((color,x))
+                    id = e['id']
+                    eventSet.append((id,color,x,e['type'] == 'pan'))
             except Queue.Empty:
                 break
         if eventSet == []:
@@ -205,9 +221,24 @@ def drawEvents():
         else:
             nothing = 0
         with colorLock:
-            fade(0.99)
-            for color,x in eventSet:
-                setColor(x,color)
+            fade(0.995)
+            for id,color,x,isPan in eventSet:
+                x = 1 - x
+                if x >= len(colors):
+                    continue
+                if id not in pans or (isPan and id in pans and now - pans[id][1] >= 0.1):
+                    colors[x] = colorMix(colors[x],color)
+                else:
+                    x0 = pans[id][0]
+                    lowx,highx = min(x,x0),min(len(colors),max(x,x0)+1)
+                    print '[%d,%d]' % (lowx,highx)
+                    for i in xrange(lowx,highx):
+                        colors[i] = colorMix(colors[i],color)
+                        # setColor(i,color)
+                if isPan:
+                    pans[id] = (x,now)
+                elif id in pans:
+                    del pans[id]
         time.sleep(0.025)
 
 def runEffect(effect):
