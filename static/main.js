@@ -56,9 +56,10 @@ $(function() {
             // This is the type of data you're expecting back from the server.
             dataType: 'json',
             // bridge IP address: 192.168.1.7
-            url: '/some/url',
-            success: function() {
+            url: '/api/touch',
+            success: function(x) {
                 console.log("success");
+                console.log(x);
             },
             error: function() {
                 console.log("error");

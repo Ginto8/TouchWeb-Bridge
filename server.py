@@ -1,4 +1,5 @@
-from flask import Flask
+from flask import Flask,render_template,request,make_response
+import flask.json as json
 import lumiversepython as L
 import time
 import math
@@ -143,24 +144,33 @@ def sendEffect(effect):
     effectQueue.put(effect)
     return ""
 
+@app.route('/ui')
+def ui():
+    return render_template("index.html")
+
 users = {}
 
-@app.route('/touch/',methods=['POST'])
+@app.route('/api/touch',methods=['POST'])
 def getTouch():
-    obj = request.args
+    print "getTouch"
+    obj = request.json
     try:
+        print repr(obj)
         state = {}
         state['x'] = obj['x']
         state['vel'] = obj['speed']
         state['type'] = obj['type']
         state['color'] = obj['color']
         state['id'] = obj['id']
+        print repr(state)
         if obj['id'] not in users:
-            users[obj]['id'] = []
+            users[str(obj['id'])] = []
         users[obj['id']].append(state)
         print repr(state)
-    except:
-        return Response("",400,{})
+        return json.jsonify(state)
+    except Exception as e:
+        print repr(e)
+        return make_response("",400,{})
 
 def runFlask():
     app.run(host='0.0.0.0',threaded=True)
