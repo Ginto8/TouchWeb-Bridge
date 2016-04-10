@@ -138,11 +138,11 @@ def step():
 		rig.select("panel=%d"%x).setColorRGBRaw("color",0,0,0)
 		raw_input("Move on to next one?")
 
-effectQueue = multiprocessing.Queue(5)
+effectQueue = multiprocessing.Queue(50)
 
 @app.route('/runeffect/<effect>')
 def sendEffect(effect):
-    effectQueue.put(effect)
+    effectQueue.put_nowait(effect)
     return ""
 
 @app.route('/ui')
@@ -163,7 +163,7 @@ def getTouch():
         state['type'] = obj['type']
         state['color'] = obj['color']
         state['id'] = obj['id']
-        print repr(state)
+        # print repr(state)
         # if obj['id'] not in users:
         #     users[str(obj['id'])] = []
         # users[obj['id']].append(state)
@@ -185,30 +185,32 @@ bg_thread.start()
 
 effectRunning = Lock()
 
-events = Queue.Queue(10)
+events = Queue.Queue(50)
 
 def drawEvents():
     print "drawEvents"
-    while True:
-        try:
-            e = events.get(True,30)
-            print "got effect " + repr(e)
-            color = [float(x)/255.0 for x in e['color']]
-            x = int(float(e['x'])*len(panels))
-            with colorLock:
-                fade(0.95)
+    nothing = 0
+    while nothing < 40*30:
+        eventSet = []
+        while True:
+            try:
+                for e in events.get_nowait():
+                    color = [float(x)/255.0 for x in e['color']]
+                    x = int(float(e['x'])*len(panels))
+                    eventSet.append((color,x))
+            except Queue.Empty:
+                break
+        if eventSet == []:
+            nothing += 1
+        else:
+            nothing = 0
+        with colorLock:
+            fade(0.99)
+            for color,x in eventSet:
                 setColor(x,color)
-        except Queue.Empty:
-            return
+        time.sleep(0.025)
 
 def runEffect(effect):
-    if type(effect) is dict:
-        print "Enqueuing " + repr(effect)
-        try:
-            events.put(effect,True,0.5)
-        except Queue.Full:
-            print repr(effect) + " Failed: don't have bridge"
-        return
     with effectRunning:
         print "Running " + str(effect)
         {
@@ -223,10 +225,18 @@ def runEffect(effect):
 while True:
     try:
         x = effectQueue.get_nowait()
-        t = Thread(target=runEffect,args=[x])
-        t.setDaemon(True)
-        t.start()
+        if type(x) is dict:
+            # print "Enqueuing " + repr(effect)
+            try:
+                events.put_nowait([x])
+            except Queue.Full:
+                print repr(x) + " Failed: don't have bridge"
+        else:
+            t = Thread(target=runEffect,args=[x])
+            t.setDaemon(True)
+            t.start()
     except Queue.Empty:
         pass
-    time.sleep(0.1)
+    if effectQueue.empty():
+        time.sleep(0.1)
 

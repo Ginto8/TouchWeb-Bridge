@@ -63,7 +63,7 @@ $(function() {
             url: '/api/touch',
             success: function() {
                 console.log("success");
-                console.log(x);
+                // console.log(x);
             },
             error: function() {
                 console.log("error");
