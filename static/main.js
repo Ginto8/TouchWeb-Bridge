@@ -27,6 +27,7 @@ $(function() {
     // get the desired parameters from each action
     // store those parameters in the 'gesture' object
     function action(e) {
+        getRGB();
         var x_pos = 0;
         if(e.center.x/getWidth() > 1) {
             x_pos = 1;
@@ -39,7 +40,7 @@ $(function() {
             type: e.type,
             x: x_pos,
             speed: e.velocityX,
-            color: color
+            color: getRGB()
         };  
         
         targetArea.textContent = gesture.x;
@@ -57,7 +58,7 @@ $(function() {
             dataType: 'json',
             // bridge IP address: 192.168.1.7
             url: '/api/touch',
-            success: function(x) {
+            success: function() {
                 console.log("success");
                 console.log(x);
             },
@@ -80,4 +81,14 @@ function getUniqueId() {
   }
   return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
     s4() + '-' + s4() + s4() + s4();
+}
+
+function getRGB() {
+    var rgb = [];
+    var rgb_string = ($("#targetArea").css('background-color'));
+    var rgb_array = rgb_string.match(/\b(\d+(\.\d*)?|\.\d+)/g);
+    for(var i = 0; i < rgb_array.length; i++) {
+        rgb.push(parseInt(rgb_array[i]));       
+    }
+    return rgb;
 }
