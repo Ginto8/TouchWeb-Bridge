@@ -1,0 +1,21 @@
+<html>
+    <body>
+        <button id="collide">Collide</button>
+        <button id="wave">Wave</button>
+        <button id="rgb">RGB</button>
+    </body>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js">
+    </script>
+    <script type="text/javascript">
+        $("#collide").click(function() {
+            $.get("http://pbridge.adm.cs.cmu.edu:5000/runeffect/collide");
+        });
+        $("#wave").click(function() {
+            $.get("http://pbridge.adm.cs.cmu.edu:5000/runeffect/wave");
+        });
+        $("#rgb").click(function() {
+            $.get("http://pbridge.adm.cs.cmu.edu:5000/runeffect/rgb");
+        });
+    </script>
+</html>
