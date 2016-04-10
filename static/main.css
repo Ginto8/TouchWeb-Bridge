@@ -8,3 +8,13 @@ html {
     text-align: center;
     font: 30px/300px Helvetica, Arial, sans-serif;
 }
+
+.wrapper {
+    text-align: center;
+}
+
+.button {
+    margin-top: 50px;
+    width: 200px;
+    height: 50px;
+}
