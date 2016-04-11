@@ -1,6 +1,9 @@
-$(function() {
-    $.get("/runeffect/events")
-})
+// initialize a global 'id' variable to hold the user's unique id
+var id;
+// initialize a global 'color' variable to hold the current color
+var color;
+
+// select a random color for the user
 function HSVtoRGB(h, s, v) {
     var r, g, b, i, f, p, q, t;
     if (arguments.length === 1) {
@@ -25,17 +28,9 @@ function HSVtoRGB(h, s, v) {
         b: Math.round(b * 255)
     };
 }
-//
-// initialize a global 'id' variable to hold the user's unique id
-var id;
-var color;
+
 // set a random color for every user
 function setColor() {  
-    // array of color choices
-    var colors = ["red", "green", "orange", "purple"];
-    // generate a random digit between 0 and 3
-    var random = Math.floor(Math.random() * 4);
-    // select a random color for the user
     color = HSVtoRGB(Math.random(),1,1);//colors[random];
     color = [color.r,color.g,color.b];
     var colorstr = "rgb(" + (color[0]|0) + "," + (color[1]|0) + "," + (color[2]|0) + ")";
@@ -115,8 +110,12 @@ function action(e) {
 }
 
 $(function() { 
+    $.get("/runeffect/events")
     // set a random color
     setColor();
+    $(".button").click(function() {
+        setColor();
+    });
     // give the user a unique id
     id = getUniqueId();
     // store DOM's 'targetArea' in a var
