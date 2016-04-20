@@ -1,16 +1,16 @@
 // initialize a global 'id' variable to hold the user's unique id
 var id;
+var blocks;
+var blockHeight; 
+var defaultBlocks = 3;
 
-// number of color blocks you want on the interface
-// 6 seems to be the reasonable limit
-var blocks = 4;
-
-function createBlocks() {
-    for(var i = 0; i < blocks; i++) {
-        $("#targetArea").append("<div class='block' id=" + i + "></div>");
+function createBlocks(val) {
+    for(var i = 0; i < val; i++) {
+        $("#wrapper2").append("<div class='block' id=" + i + "></div>");
     }
-    $("#targetArea").append("<div id='wrapper'><button class='button'>New Colors</button></div>");
-}
+    $("#wrapper3").append("<button class='button'>New Colors</button>");
+    blocks = $("#wrapper2").children().length;
+} 
 
 // select a random color for the user
 function HSVtoRGB(h, s, v) {
@@ -41,7 +41,7 @@ function HSVtoRGB(h, s, v) {
 // set a random color for every user
 function setColor() { 
     var color;
-    for(var i = 0; i < $("#targetArea").children().length - 1; i++) {
+    for(var i = 0; i < blocks; i++) {
         color = HSVtoRGB(Math.random(),1,1);//colors[random];
         color = [color.r,color.g,color.b];
         var colorstr = "rgb(" + (color[0]|0) + "," + (color[1]|0) + "," + (color[2]|0) + ")";
@@ -52,7 +52,7 @@ function setColor() {
 
 // return the width of the 'targetArea' on the device
 function getWidth() {
-    return (parseInt($("#targetArea").css("width")));
+    return (parseInt($("#wrapper2").css("width")));
 }
 
 // generate a unique ID for each user
@@ -69,8 +69,11 @@ function getUniqueId() {
 // get the RGB values of 'targetArea', store them in an array, and return them
 function getRGB(y) {
     var rgb = [];
-    var height = parseInt($("#targetArea").height()) / ($("#targetArea").children().length - 1);
-    var loc = Math.floor(y / height);
+    var totalHeight = parseInt($("#wrapper2").css("height"));
+    var loc = Math.floor((y - 113) * blocks / totalHeight);
+    
+    console.log(y);
+    console.log(loc);
     var rgb_string = $("#" + loc).css('background-color');
     var rgb_array = rgb_string.match(/\b(\d+(\.\d*)?|\.\d+)/g);
     for(var i = 0; i < rgb_array.length; i++) {
@@ -102,7 +105,7 @@ function action(e) {
         speed: e.velocityX,
         color: getRGB(e.center.y)
     }; 
-    console.log(gesture);
+    console.log(gesture.color);
     // make an AJAX call
     $.ajax({
         type: 'POST',
@@ -124,22 +127,20 @@ function action(e) {
 }
 
 function setHeight() {
-    var height = $("html").height();
-    $("#targetArea").css("height", height);
-    $(".block").css("height", height / $("#targetArea").children().length);
-    $("#wrapper").css("height", height / $("#targetArea").children().length - 40);
-    $("#targetArea").css("min-height", "300px");
-    $(".block").css("min-height", "50px");
-    $("#wrapper").css("min-height", "50px");
+    var height = parseInt($("html").height());
+    $("#targetArea").css("height", height + "px");
+    $("#wrapper2").css("height", height - 225 + "px");
+    $(".block").css("height", (height - 225) / blocks - (1 * blocks) + "px");
+    blockHeight = parseInt($(".block").css("height"));
 }
 
 $(window).resize(function(){
-        setHeight();
+    setHeight();
 });
 
 $(function() { 
     $.get("/runeffect/events")
-    createBlocks();
+    createBlocks(defaultBlocks);
     document.ontouchmove = function(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -149,11 +150,25 @@ $(function() {
     setHeight();
     $(".button").click(function() {
         setColor();
+        targetArea = document.getElementById('wrapper2');
+        hammer = new Hammer(targetArea);
+    });
+    $(".select").click(function() { 
+        $("#wrapper2").children().remove();
+        $(".button").remove();
+        createBlocks($(this).val());
+        $(".button").click(function() {
+            setColor();
+        });
+        setColor();
+        setHeight();
+        targetArea = document.getElementById('wrapper2');
+        hammer = new Hammer(targetArea);
     });
     // give the user a unique id
     id = getUniqueId();
     // store DOM's 'targetArea' in a var
-    var targetArea = document.getElementById('targetArea');
+    var targetArea = document.getElementById('wrapper2');
     // create a new instance of Hammer in targetArea
     var hammer = new Hammer(targetArea);
     // listen to pan, tap, and press events
