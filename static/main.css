@@ -1,20 +1,16 @@
 html {
     height:100%;
-    overflow: hidden;
+    overflow:hidden;
 }
 
-#targetArea {
-    height: 400px;
-    text-align: center;
-    font: 30px/300px Helvetica, Arial, sans-serif;
-}
-
-.wrapper {
-    text-align: center;
+.block {
+    width:100%;
+    display:inline-block;
 }
 
 .button {
-    margin-top: 50px;
-    width: 200px;
-    height: 50px;
+    width:100%;
+    height:100%;
+    margin-top:5px;
+    font:20px Helvetica, Arial, sans-serif;
 }

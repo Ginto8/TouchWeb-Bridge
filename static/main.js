@@ -1,7 +1,16 @@
 // initialize a global 'id' variable to hold the user's unique id
 var id;
-// initialize a global 'color' variable to hold the current color
-var color;
+
+// number of color blocks you want on the interface
+// 6 seems to be the reasonable limit
+var blocks = 4;
+
+function createBlocks() {
+    for(var i = 0; i < blocks; i++) {
+        $("#targetArea").append("<div class='block' id=" + i + "></div>");
+    }
+    $("#targetArea").append("<div id='wrapper'><button class='button'>New Colors</button></div>");
+}
 
 // select a random color for the user
 function HSVtoRGB(h, s, v) {
@@ -30,12 +39,15 @@ function HSVtoRGB(h, s, v) {
 }
 
 // set a random color for every user
-function setColor() {  
-    color = HSVtoRGB(Math.random(),1,1);//colors[random];
-    color = [color.r,color.g,color.b];
-    var colorstr = "rgb(" + (color[0]|0) + "," + (color[1]|0) + "," + (color[2]|0) + ")";
-    // set the background color of 'targetArea' to the random color
-    $('#targetArea').css("background-color", colorstr);
+function setColor() { 
+    var color;
+    for(var i = 0; i < $("#targetArea").children().length - 1; i++) {
+        color = HSVtoRGB(Math.random(),1,1);//colors[random];
+        color = [color.r,color.g,color.b];
+        var colorstr = "rgb(" + (color[0]|0) + "," + (color[1]|0) + "," + (color[2]|0) + ")";
+        // set the background color of 'targetArea' to the random color
+        $("#" + i).css("background-color", colorstr);
+    }
 }
 
 // return the width of the 'targetArea' on the device
@@ -55,9 +67,11 @@ function getUniqueId() {
 }
 
 // get the RGB values of 'targetArea', store them in an array, and return them
-function getRGB() {
+function getRGB(y) {
     var rgb = [];
-    var rgb_string = ($("#targetArea").css('background-color'));
+    var height = parseInt($("#targetArea").height()) / ($("#targetArea").children().length - 1);
+    var loc = Math.floor(y / height);
+    var rgb_string = $("#" + loc).css('background-color');
     var rgb_array = rgb_string.match(/\b(\d+(\.\d*)?|\.\d+)/g);
     for(var i = 0; i < rgb_array.length; i++) {
         rgb.push(parseInt(rgb_array[i]));       
@@ -86,7 +100,7 @@ function action(e) {
         type: e.type,
         x: x_pos,
         speed: e.velocityX,
-        color: color//getRGB()
+        color: getRGB(e.center.y)
     }; 
     console.log(gesture);
     // make an AJAX call
@@ -109,10 +123,30 @@ function action(e) {
     });
 }
 
+function setHeight() {
+    var height = $("html").height();
+    $("#targetArea").css("height", height);
+    $(".block").css("height", height / $("#targetArea").children().length);
+    $("#wrapper").css("height", height / $("#targetArea").children().length - 40);
+    $("#targetArea").css("min-height", "300px");
+    $(".block").css("min-height", "50px");
+    $("#wrapper").css("min-height", "50px");
+}
+
+$(window).resize(function(){
+        setHeight();
+});
+
 $(function() { 
     $.get("/runeffect/events")
+    createBlocks();
+    document.ontouchmove = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    };
     // set a random color
     setColor();
+    setHeight();
     $(".button").click(function() {
         setColor();
     });
