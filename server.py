@@ -6,6 +6,10 @@ import math
 import multiprocessing,Queue
 from threading import Thread,Lock
 import threading as T
+import logging
+
+log = logging.getLogger()
+log.setLevel(logging.INFO)
 
 DEBUG=True
 USE_DEBUGGER=True
@@ -19,8 +23,10 @@ rig.init()
 panels = [rig.select("$panel=%d"%x) for x in xrange(57)]
 
 colors = [(0,0,0) for p in panels]
+objects = []
 
 colorLock = Lock()
+objectLock = Lock()
 
 def setColor(i,c):
     colors[i] = c
@@ -30,21 +36,32 @@ def setColorLock(i,c):
     colors[i] = c
     colorLock.release()
 
+timeStep = 0.025
+
 def updateLights():
     while(1):
         with colorLock:
+            with objectLock:
+                newObjects = []
+                for x,v,color in objects:
+                    i = int(math.round(x))
+                    if i >= 0 and i < len(colors):
+                        colors[i] = colorMix(colors[i],color)
+                        newX = x + v*timeStep
+                        newObjects.append((newX,v,color))
+                objects = newObjects
             for i,c in enumerate(colors):
                 (r,g,b) = c
                 panels[i].setRGBRaw(2**r-1,2**g-1,2**b-1)
         rig.updateOnce()
-        time.sleep(0.025)
+        time.sleep(timeStep)
 
 """
     use weight parameter (last (optional) parameter in setColorRGBRaw) to fade in colors...
     use the blank template to disable pharos 
 """
 def flash(c):
-    print "flash (%f,%f,%f)" % c
+    log.info("flash (%f,%f,%f)" % c)
     with colorLock:
         for i in xrange(len(panels)):
             setColor(i,c)
@@ -131,13 +148,6 @@ def runRgb():
     time.sleep(1)
     off()
 
-def step():
-	for x in xrange(100):
-		rig.select("panel=%d"%x).setColorRGBRaw("color",1,1,1)
-		raw_input("Current number is %d, TURNED ON"%x)
-		rig.select("panel=%d"%x).setColorRGBRaw("color",0,0,0)
-		raw_input("Move on to next one?")
-
 effectQueue = multiprocessing.Queue(50)
 
 @app.route('/runeffect/<effect>')
@@ -151,10 +161,10 @@ def ui():
 
 @app.route('/api/touch',methods=['POST'])
 def getTouch():
-    print "getTouch"
+    log.info("getTouch")
     obj = request.json
     try:
-        print repr(obj)
+        log.info( repr(obj))
         state = {}
         state['x'] = obj['x']
         state['vel'] = obj['speed']
@@ -169,7 +179,7 @@ def getTouch():
         sendEffect(state)
         return json.jsonify(state)
     except Exception as e:
-        print repr(e)
+        log.info( repr(e))
         return make_response("",400,{})
 
 def runFlask():
@@ -202,7 +212,7 @@ def colorMix(a,b):
     return [math.log(x+1,2) for x in newcolor]
 
 def drawEvents():
-    print "drawEvents"
+    log.info( "drawEvents")
     nothing = 0
     while nothing < 40*30:
         eventSet = []
@@ -213,6 +223,9 @@ def drawEvents():
                     color = [float(x)/255.0 for x in e['color']]
                     x = int(float(e['x'])*len(panels))
                     id = e['id']
+                    if abs(e['speed']) > 1:
+                        with objectLock:
+                            objects.append((x,e['speed']/10,color))
                     eventSet.append((id,color,x,e['type'] == 'pan'))
             except Queue.Empty:
                 break
@@ -231,7 +244,7 @@ def drawEvents():
                 else:
                     x0 = pans[id][0]
                     lowx,highx = min(x,x0),min(len(colors),max(x,x0)+1)
-                    print '[%d,%d]' % (lowx,highx)
+                    log.info( '[%d,%d]' % (lowx,highx))
                     for i in xrange(lowx,highx):
                         colors[i] = colorMix(colors[i],color)
                         # setColor(i,color)
@@ -243,14 +256,14 @@ def drawEvents():
 
 def runEffect(effect):
     with effectRunning:
-        print "Running " + str(effect)
+        log.info( "Running " + str(effect))
         {
             'rgb':runRgb,
             'wave':wave,
             'collide':collider,
             'events':drawEvents
         }[effect]()
-        print "Done"
+        log.info( "Done")
         off()
 
 while True:
@@ -261,7 +274,7 @@ while True:
             try:
                 events.put_nowait([x])
             except Queue.Full:
-                print repr(x) + " Failed: don't have bridge"
+                log.info( repr(x) + " Failed: don't have bridge")
         else:
             t = Thread(target=runEffect,args=[x])
             t.setDaemon(True)
