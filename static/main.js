@@ -2,51 +2,29 @@
 var id;
 var blocks;
 var blockHeight; 
-var defaultBlocks = 3;
+var defaultBlocks = 2;
 
 function createBlocks(val) {
     for(var i = 0; i < val; i++) {
         $("#wrapper2").append("<div class='block' id=" + i + "></div>");
     }
-    $("#wrapper3").append("<button class='button'>New Colors</button>");
     blocks = $("#wrapper2").children().length;
 } 
 
-// select a random color for the user
-function HSVtoRGB(h, s, v) {
-    var r, g, b, i, f, p, q, t;
-    if (arguments.length === 1) {
-        s = h.s, v = h.v, h = h.h;
-    }
-    i = Math.floor(h * 6);
-    f = h * 6 - i;
-    p = v * (1 - s);
-    q = v * (1 - f * s);
-    t = v * (1 - (1 - f) * s);
-    switch (i % 6) {
-        case 0: r = v, g = t, b = p; break;
-        case 1: r = q, g = v, b = p; break;
-        case 2: r = p, g = v, b = t; break;
-        case 3: r = p, g = q, b = v; break;
-        case 4: r = t, g = p, b = v; break;
-        case 5: r = v, g = p, b = q; break;
-    }
-    return {
-        r: Math.round(r * 255),
-        g: Math.round(g * 255),
-        b: Math.round(b * 255)
-    };
-}
-
 // set a random color for every user
 function setColor() { 
-    var color;
+    var colorstr = Please.make_color({
+        hue: 12, //set your hue manually
+        saturation: .7, //set your saturation manually
+        value: .8, //set your value manually
+        colors_returned: blocks //set number of colors returned
+    });
     for(var i = 0; i < blocks; i++) {
-        color = HSVtoRGB(Math.random(),1,1);//colors[random];
-        color = [color.r,color.g,color.b];
-        var colorstr = "rgb(" + (color[0]|0) + "," + (color[1]|0) + "," + (color[2]|0) + ")";
-        // set the background color of 'targetArea' to the random color
-        $("#" + i).css("background-color", colorstr);
+        if(blocks == 1) {
+            $("#" + i).css("background-color", colorstr);
+        } else {
+            $("#" + i).css("background-color", colorstr[i]);
+        }
     }
 }
 
@@ -67,12 +45,12 @@ function getUniqueId() {
 }
 
 // get the RGB values of 'targetArea', store them in an array, and return them
-function getRGB(y) {
+function getRGB(y) {  
     var rgb = [];
-    var totalHeight = parseInt($("#wrapper2").css("height"));
-    var loc = Math.floor((y - 113) * blocks / totalHeight);
-    
-    console.log(y);
+    var loc = Math.max(Math.floor(y / (blockHeight + parseInt($(".block").css("margin-top")))), 0);;
+    if(loc > blocks - 1) {
+        loc = blocks - 1;
+    }
     console.log(loc);
     var rgb_string = $("#" + loc).css('background-color');
     var rgb_array = rgb_string.match(/\b(\d+(\.\d*)?|\.\d+)/g);
@@ -105,7 +83,6 @@ function action(e) {
         speed: e.velocityX,
         color: getRGB(e.center.y)
     }; 
-    console.log(gesture.color);
     // make an AJAX call
     $.ajax({
         type: 'POST',
@@ -118,7 +95,6 @@ function action(e) {
         url: '/api/touch',
         success: function() {
             console.log("success");
-            // console.log(x);
         },
         error: function() {
             console.log("error");
@@ -128,49 +104,120 @@ function action(e) {
 
 function setHeight() {
     var height = parseInt($("html").height());
-    $("#targetArea").css("height", height + "px");
-    $("#wrapper2").css("height", height - 225 + "px");
-    $(".block").css("height", (height - 225) / blocks - (1 * blocks) + "px");
+    
+    $("#buttonContainer").css("height", 0.25 * height + "px");
+    
+    var buttonHeights = parseInt($("#buttonContainer").css("height"));
+    
+    $(".select").css("height", 0.5 * buttonHeights - 10 + "px");
+    
+    $("#button").css("height", 0.5 * buttonHeights - 10 + "px");
+    
+    var blockMargins = parseInt($(".block").css("margin-top"));
+        
+    $("#wrapper2").css("height", height - buttonHeights + blockMargins + "px");
+    
+    var wrapper2Height = parseInt($("#wrapper2").css("height"));
+    
+    $(".block").css("height", (wrapper2Height - blockMargins * blocks) / blocks + "px");            
+    
     blockHeight = parseInt($(".block").css("height"));
+    blockTouch();
 }
 
-$(window).resize(function(){
-    setHeight();
-});
-
-$(function() { 
-    $.get("/runeffect/events")
-    createBlocks(defaultBlocks);
-    document.ontouchmove = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    };
-    // set a random color
+function newNumber() {
+    $("#wrapper2").children().remove();
+    createBlocks(blocks);
+    $("#button").click(function() {
+        setColor();
+    });
     setColor();
     setHeight();
-    $(".button").click(function() {
-        setColor();
-        targetArea = document.getElementById('wrapper2');
-        hammer = new Hammer(targetArea);
+    targetArea = document.getElementById('wrapper2');
+    hammer = new Hammer(targetArea);
+}
+
+function toggleButtons() {
+    $(".select").click(function() {
+        if(!$(this).hasClass("active")) {
+            blocks = parseInt($(this).text());
+            $(this).siblings().removeClass("active");
+            $(this).addClass("active");
+            newNumber();
+        }
     });
-    $(".select").click(function() { 
-        $("#wrapper2").children().remove();
-        $(".button").remove();
-        createBlocks($(this).val());
-        $(".button").click(function() {
-            setColor();
-        });
+}
+
+function newColors() {
+    $("#button").mouseup(function(){
+        $(this).blur();
+    });
+    $("#button").on("touchend", function(){ 
+        $(this).blur();
+    });
+    $("#button").click(function() {
         setColor();
         setHeight();
         targetArea = document.getElementById('wrapper2');
         hammer = new Hammer(targetArea);
     });
-    // give the user a unique id
-    id = getUniqueId();
+}
+
+function startHammerJS() {
     // store DOM's 'targetArea' in a var
     var targetArea = document.getElementById('wrapper2');
     // create a new instance of Hammer in targetArea
     var hammer = new Hammer(targetArea);
     // listen to pan, tap, and press events
     hammer.on("pan tap press", action);
+}
+
+function blockTouch() {
+    $(".block").mousedown(function() {
+       $(this).addClass("overlay"); 
+    });
+    $(".block").mouseup(function() {
+       $(this).removeClass("overlay"); 
+    });
+    
+    $(".block").on("touchstart", function() {
+       $(this).addClass("overlay"); 
+    });
+    $(".block").on("touchend", function() {
+       $(this).removeClass("overlay"); 
+    });
+//    $(".block").mouseenter(function() {
+//       $(this).addClass("overlay"); 
+//    });
+//    $(".block").mouseleave(function() {
+//       $(this).removeClass("overlay"); 
+//    });
+//    $(".block").hover(
+//        function() {
+//            $(this).addClass("overlay");
+//        }, function() {
+//            $(this).removeClass("overlay");
+//        }
+//    );
+}
+
+
+$(window).resize(function() {
+    setHeight();
+});
+
+$(function() {
+    $.get("/runeffect/events");
+    createBlocks(defaultBlocks);
+    document.ontouchmove = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    id = getUniqueId();
+    blockTouch();
+    setHeight();
+    setColor();
+    startHammerJS();
+    newColors();
+    toggleButtons();
 });
