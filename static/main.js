@@ -70,8 +70,8 @@ function getUniqueId() {
 function getRGB(y) {
     var rgb = [];
     var totalHeight = parseInt($("#wrapper2").css("height"));
-    var loc = Math.floor((y - 113) * blocks / totalHeight);
-    
+    var loc = Math.max(0,Math.floor((y - 113) * blocks / totalHeight));
+
     console.log(y);
     console.log(loc);
     var rgb_string = $("#" + loc).css('background-color');

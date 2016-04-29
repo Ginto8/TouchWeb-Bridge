@@ -8,8 +8,19 @@ from threading import Thread,Lock
 import threading as T
 import logging
 
-log = logging.getLogger()
-log.setLevel(logging.INFO)
+
+def setup_custom_logger(name):
+    formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
+
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(handler)
+    return logger
+
+log = setup_custom_logger('root')
 
 DEBUG=True
 USE_DEBUGGER=True
@@ -39,12 +50,13 @@ def setColorLock(i,c):
 timeStep = 0.025
 
 def updateLights():
+    global objects
     while(1):
         with colorLock:
             with objectLock:
                 newObjects = []
                 for x,v,color in objects:
-                    i = int(math.round(x))
+                    i = int(x+0.5)
                     if i >= 0 and i < len(colors):
                         colors[i] = colorMix(colors[i],color)
                         newX = x + v*timeStep
@@ -166,7 +178,7 @@ def getTouch():
     try:
         log.info( repr(obj))
         state = {}
-        state['x'] = obj['x']
+        state['x'] = 1-obj['x']
         state['vel'] = obj['speed']
         state['type'] = obj['type']
         state['color'] = obj['color']
@@ -212,29 +224,31 @@ def colorMix(a,b):
     return [math.log(x+1,2) for x in newcolor]
 
 def drawEvents():
+    global objects
     log.info( "drawEvents")
     nothing = 0
     while nothing < 40*30:
         eventSet = []
+        objectSet = []
         now = time.time()
         while True:
-            try:
-                for e in events.get_nowait():
-                    color = [float(x)/255.0 for x in e['color']]
-                    x = int(float(e['x'])*len(panels))
-                    id = e['id']
-                    if abs(e['speed']) > 1:
-                        with objectLock:
-                            objects.append((x,e['speed']/10,color))
-                    eventSet.append((id,color,x,e['type'] == 'pan'))
-            except Queue.Empty:
-                break
+            with objectLock:
+                try:
+                    for e in events.get_nowait():
+                        color = [float(x)/255.0 for x in e['color']]
+                        x = int(float(e['x'])*len(panels))
+                        id = e['id']
+                        # if abs(e['vel']) > 5:
+                        #         objects.append((x,e['vel'],color))
+                        eventSet.append((id,color,x,e['type'] == 'pan'))
+                except Queue.Empty:
+                    break
         if eventSet == []:
             nothing += 1
         else:
             nothing = 0
         with colorLock:
-            fade(0.995)
+            fade(0.985)
             for id,color,x,isPan in eventSet:
                 x = 1 - x
                 if x >= len(colors):
@@ -266,9 +280,11 @@ def runEffect(effect):
         log.info( "Done")
         off()
 
+first = True
 while True:
     try:
-        x = effectQueue.get_nowait()
+        x = 'events' if first else effectQueue.get_nowait()
+        first = False
         if type(x) is dict:
             # print "Enqueuing " + repr(effect)
             try:

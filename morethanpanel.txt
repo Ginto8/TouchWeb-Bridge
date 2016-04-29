@@ -1,0 +1,1 @@
+sequence, then side={top,bottom}
