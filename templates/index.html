@@ -1,18 +1,35 @@
 <!DOCTYPE html>
 <hmtl>
-    <link rel='stylesheet' href="static/main.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-    <script src="https://hammerjs.github.io/dist/hammer.js"></script> 
+    <link rel='stylesheet' href="main.css">
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+    <script src="static/jquery.js"></script>
+    <script src="static/hammer.js"></script> 
+    <script src="static/please.js"></script> 
     <script src="static/main.js"></script>
-    <div id="targetArea">
-        <div id="wrapper1">
-            <button class='select' value="1">1</button>
-            <button class='select' value="2">2</button>
-            <button class='select' value="3">3</button>
-            <button class='select' value="4">4</button>
-            <button class='select' value="5">5</button>
+    <div id="container">
+        <div class="col">
+            <div class="row-md-8" id="wrapper2"></div>
+            <div class="col" id="buttonContainer">
+                <div class="row-md-8" id="wrapper1">
+                    <div class="btn-group-justified" data-toggle="buttons">
+                        <label class="select btn btn-primary">
+                            <input type="radio" name="options" autocomplete="off" value="1">1
+                        </label>
+                        <label class="select btn btn-primary active">
+                            <input type="radio" name="options" autocomplete="off" value="2">2
+                        </label>
+                        <label class="select btn btn-primary">
+                            <input type="radio" name="options" autocomplete="off" value="3">3
+                        </label>
+                        <label class="select btn btn-primary">
+                            <input type="radio" name="options" autocomplete="off" value="4">4
+                        </label>
+                    </div>
+                </div>
+                <div class="row-md-8" id="wrapper3">
+                    <button type='button' class='btn btn-primary btn-lg btn-block' id='button'>New Colors</button>
+                </div>
+            </div>
         </div>
-        <div id="wrapper2"></div>
-        <div id="wrapper3"></div>
     </div>
 </hmtl>
