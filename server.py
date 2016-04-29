@@ -31,10 +31,13 @@ rig = L.Rig("/home/teacher/Lumiverse/PBridge.rig.json")
 rig.init()
 # rig.run()
 
-panels = [rig.select("$panel=%d"%x) for x in xrange(57)]
+panels = [rig.select("$sequence=%d[$side=top|$side=bot]"%x) for x in
+              xrange(1,199)]
+# panels = [rig.select("$panel=%d"%x) for x in xrange(57)]
 
 colors = [(0,0,0) for p in panels]
 objects = []
+users = {}
 
 colorLock = Lock()
 objectLock = Lock()
@@ -55,15 +58,16 @@ def updateLights():
         with colorLock:
             with objectLock:
                 newObjects = []
-                for x,v,color in objects:
+                for x,v,color,scale in objects:
                     i = int(x+0.5)
                     if i >= 0 and i < len(colors):
-                        colors[i] = colorMix(colors[i],color)
+                        colors[i] = colorMix(colors[i],color,scale)
                         newX = x + v*timeStep
-                        newObjects.append((newX,v,color))
+                        newObjects.append((newX,v,color,scale*0.98))
                 objects = newObjects
             for i,c in enumerate(colors):
                 (r,g,b) = c
+                # panels[i].setRGBRaw(2**r-1,2**g-1,2**b-1)
                 panels[i].setRGBRaw(2**r-1,2**g-1,2**b-1)
         rig.updateOnce()
         time.sleep(timeStep)
@@ -92,6 +96,11 @@ def fade(factor=0.97):
     for ix in xrange(len(panels)):
         (r,g,b) = colors[ix]
         colors[ix] = (factor*r,factor*g,factor*b)
+    with objectLock:
+        for id in users.keys():
+            users[id] *= 0.988;
+            if users[id] < 0.1:
+                del users[id]
 
 def wave():
     for i in xrange(2*len(panels)):
@@ -209,7 +218,7 @@ events = Queue.Queue(50)
 
 pans = {}
 
-def colorMix(a,b):
+def colorMix(a,b,normPoint=1):
     gammaA,gammaB = [2**x-1 for x in a],[2**x-1 for x in b]
     amax,bmax = max(gammaA),max(gammaB)
     # norm = max(amax,bmax)
@@ -218,7 +227,7 @@ def colorMix(a,b):
     elif amax < 0.01:
         return b
     newcolor = [(a/amax)+(b/bmax) for a,b in zip(gammaA,gammaB)]
-    norm = max(newcolor)
+    norm = max(newcolor)/normPoint
     if norm > 1:
         newcolor = [min(1,c/norm) for c in newcolor]
     return [math.log(x+1,2) for x in newcolor]
@@ -238,8 +247,12 @@ def drawEvents():
                         color = [float(x)/255.0 for x in e['color']]
                         x = int(float(e['x'])*len(panels))
                         id = e['id']
+                        users[id] = 1
                         # if abs(e['vel']) > 5:
                         #         objects.append((x,e['vel'],color))
+                        if e['type'] == 'tap':
+                            objects.append((x,40,color,1))
+                            objects.append((x,-40,color,1))
                         eventSet.append((id,color,x,e['type'] == 'pan'))
                 except Queue.Empty:
                     break
@@ -248,7 +261,8 @@ def drawEvents():
         else:
             nothing = 0
         with colorLock:
-            fade(0.985)
+            fade(max(0.95,0.983 - \
+                0.001*(len(users.keys())+len(objects))))
             for id,color,x,isPan in eventSet:
                 x = 1 - x
                 if x >= len(colors):
