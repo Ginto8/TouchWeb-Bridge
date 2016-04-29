@@ -3,12 +3,15 @@ var id;
 var blocks;
 var blockHeight; 
 var defaultBlocks = 2;
+var loc;
+var side = "front";
 
 function createBlocks(val) {
     for(var i = 0; i < val; i++) {
-        $("#wrapper2").append("<div class='block' id=" + i + "></div>");
+        $(".front").append("<div class='block' id=f" + i + "></div>");
+        $(".back").append("<div class='block' id=b" + i + "></div>");
     }
-    blocks = $("#wrapper2").children().length;
+    blocks = $(".front").children().length;
 } 
 
 // set a random color for every user
@@ -21,16 +24,18 @@ function setColor() {
     });
     for(var i = 0; i < blocks; i++) {
         if(blocks == 1) {
-            $("#" + i).css("background-color", colorstr);
+            $(".front>#f" + i).css("background-color", colorstr);
+            $(".back>#b" + i).css("background-color", colorstr);
         } else {
-            $("#" + i).css("background-color", colorstr[i]);
+            $(".front>#f" + i).css("background-color", colorstr[i]);
+            $(".back>#b" + i).css("background-color", colorstr[i]);
         }
     }
 }
 
 // return the width of the 'targetArea' on the device
 function getWidth() {
-    return (parseInt($("#wrapper2").css("width")));
+    return parseInt($("#card").css("width"));
 }
 
 // generate a unique ID for each user
@@ -47,12 +52,12 @@ function getUniqueId() {
 // get the RGB values of 'targetArea', store them in an array, and return them
 function getRGB(y) {  
     var rgb = [];
-    var loc = Math.max(Math.floor(y / (blockHeight + parseInt($(".block").css("margin-top")))), 0);;
+    loc = Math.max(Math.floor(y / (blockHeight + parseInt($(".block").css("margin-top")))), 0);;
     if(loc > blocks - 1) {
         loc = blocks - 1;
     }
     console.log(loc);
-    var rgb_string = $("#" + loc).css('background-color');
+    var rgb_string = $("#f" + loc).css('background-color');
     var rgb_array = rgb_string.match(/\b(\d+(\.\d*)?|\.\d+)/g);
     for(var i = 0; i < rgb_array.length; i++) {
         rgb.push(parseInt(rgb_array[i]));       
@@ -74,6 +79,9 @@ function action(e) {
         x_pos = 1;
     } else {
         x_pos = e.center.x/getWidth();
+    }
+    if(side == "back") {
+        x_pos = 1 - x_pos;
     }
     // store properties in gesture
     gesture = {
@@ -104,36 +112,30 @@ function action(e) {
 
 function setHeight() {
     var height = parseInt($("html").height());
-    
     $("#buttonContainer").css("height", 0.25 * height + "px");
-    
     var buttonHeights = parseInt($("#buttonContainer").css("height"));
-    
     $(".select").css("height", 0.5 * buttonHeights - 10 + "px");
-    
-    $("#button").css("height", 0.5 * buttonHeights - 10 + "px");
-    
+    $("#newColor").css("height", 0.5 * buttonHeights - 10 + "px");
+    $("#flip").css("height", 0.5 * buttonHeights - 10 + "px");
     var blockMargins = parseInt($(".block").css("margin-top"));
-        
-    $("#wrapper2").css("height", height - buttonHeights + blockMargins + "px");
-    
-    var wrapper2Height = parseInt($("#wrapper2").css("height"));
-    
-    $(".block").css("height", (wrapper2Height - blockMargins * blocks) / blocks + "px");            
-    
+    $("#card").css("height", height - buttonHeights + blockMargins + "px");
+    var cardHeight = parseInt($("#card").css("height"));
+    $(".block").css("height", (cardHeight - blockMargins * blocks) / blocks + "px");
+    //maxHeights();
     blockHeight = parseInt($(".block").css("height"));
-    blockTouch();
+    hoverOverlay();
 }
 
 function newNumber() {
-    $("#wrapper2").children().remove();
+    $(".front").children().remove();
+    $(".back").children().remove();
     createBlocks(blocks);
-    $("#button").click(function() {
+    $("#newColor").click(function() {
         setColor();
     });
     setColor();
     setHeight();
-    targetArea = document.getElementById('wrapper2');
+    targetArea = document.getElementById('card');
     hammer = new Hammer(targetArea);
 }
 
@@ -149,58 +151,94 @@ function toggleButtons() {
 }
 
 function newColors() {
-    $("#button").mouseup(function(){
+    $("#newColor").mouseup(function(){
         $(this).blur();
     });
-    $("#button").on("touchend", function(){ 
+    $("#newColor").on("touchend", function(){ 
         $(this).blur();
     });
-    $("#button").click(function() {
+    $("#newColor").click(function() {
         setColor();
         setHeight();
-        targetArea = document.getElementById('wrapper2');
+        targetArea = document.getElementById('card');
         hammer = new Hammer(targetArea);
     });
 }
 
 function startHammerJS() {
     // store DOM's 'targetArea' in a var
-    var targetArea = document.getElementById('wrapper2');
+    var targetArea = document.getElementById('card');
     // create a new instance of Hammer in targetArea
     var hammer = new Hammer(targetArea);
     // listen to pan, tap, and press events
     hammer.on("pan tap press", action);
 }
 
-function blockTouch() {
-    $(".block").mousedown(function() {
-       $(this).addClass("overlay"); 
-    });
-    $(".block").mouseup(function() {
-       $(this).removeClass("overlay"); 
-    });
-    
-    $(".block").on("touchstart", function() {
-       $(this).addClass("overlay"); 
-    });
-    $(".block").on("touchend", function() {
-       $(this).removeClass("overlay"); 
-    });
-//    $(".block").mouseenter(function() {
-//       $(this).addClass("overlay"); 
-//    });
-//    $(".block").mouseleave(function() {
-//       $(this).removeClass("overlay"); 
-//    });
-//    $(".block").hover(
-//        function() {
-//            $(this).addClass("overlay");
-//        }, function() {
-//            $(this).removeClass("overlay");
-//        }
-//    );
+function maxHeights() {
+    if($(window).width() < 980) {
+        $("#card").addClass("max-height");
+    } else {
+        $("#card").removeClass("max-height");
+    }
 }
 
+function hoverOverlay() {
+    var clicking = false;
+    $('.block').mousedown(function(){
+        clicking = true;
+        if(loc != undefined && loc == parseInt($(this).attr("id"))) {
+            $("#f" + loc).css({opacity: 0.7});
+            $("#b" + loc).css({opacity: 0.7});
+        } else {
+            $(this).css({opacity: 0.7});
+        }
+    });
+    $(document).mouseup(function(){
+        clicking = false;
+        $(".block").css({opacity: 1.0});
+    });
+    $('.block').mousemove(function(){
+        if(clicking != false) {
+            $(".block").css({opacity: 1.0});
+            $("#f" + loc).css({opacity: 0.7});
+            $("#b" + loc).css({opacity: 0.7});
+        }
+    });
+    $('.block').on("touchstart", function(){
+        clicking = true;
+        if(loc != undefined && loc == parseInt($(this).attr("id"))) {
+            $("#f" + loc).css({opacity: 0.7});
+            $("#b" + loc).css({opacity: 0.7});
+        } else {
+            $(this).css({opacity: 0.7});
+        }    });
+    $(document).on("touchend", function(){
+        clicking = false;
+        $(".block").css({opacity: 1.0});
+    });
+    $('.block').on("touchmove", function(){
+        if(clicking != false) {
+            $(".block").css({opacity: 1.0});
+            $("#f" + loc).css({opacity: 0.7});
+            $("#b" + loc).css({opacity: 0.7});
+        }
+    });
+}
+
+function flip() {
+    console.log(side);
+    $("#flip").click(function() { 
+        $("#card").flip('toggle');
+        if(side == "front") {
+            $("#image").attr("src", "static/flip2.png");
+            side = "back";
+        } else if (side == "back") {
+            $("#image").attr("src", "static/flip1.png");
+            side = "front";
+        }
+        console.log(side);
+    });
+}
 
 $(window).resize(function() {
     setHeight();
@@ -214,10 +252,15 @@ $(function() {
         e.stopPropagation();
     }
     id = getUniqueId();
-    blockTouch();
     setHeight();
     setColor();
     startHammerJS();
+    hoverOverlay();
     newColors();
     toggleButtons();
+    $("#card").flip({
+        trigger:'manual',
+        speed:2000
+    });
+    flip();
 });
