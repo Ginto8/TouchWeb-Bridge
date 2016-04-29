@@ -1,12 +1,25 @@
 from flask import Flask,render_template,request,make_response
 import flask.json as json
-import lumiversepython as L
 import time
 import math
 import multiprocessing,Queue
 from threading import Thread,Lock
 import threading as T
 import logging
+try:
+    import lumiversepython as L
+except:
+    DEBUG=True
+    USE_DEBUGGER=True
+    app=Flask(__name__)
+
+    @app.route('/ui')
+    def ui():
+        return render_template("index.html")
+    app.run(host='0.0.0.0',threaded=True)
+    exit(0)
+
+
 
 
 def setup_custom_logger(name):
@@ -187,7 +200,7 @@ def getTouch():
     try:
         log.info( repr(obj))
         state = {}
-        state['x'] = 1-obj['x']
+        state['x'] = obj['x']
         state['vel'] = obj['speed']
         state['type'] = obj['type']
         state['color'] = obj['color']
