@@ -90,6 +90,7 @@ function action(e) {
         speed: e.velocityX,
         color: getRGB(e.center.y)
     }; 
+    console.log(gesture);
     // make an AJAX call
     $.ajax({
         type: 'POST',
@@ -129,9 +130,7 @@ function newNumber() {
     $(".front").children().remove();
     $(".back").children().remove();
     createBlocks(blocks);
-    $("#newColor").click(function() {
-        setColor();
-    });
+    newColors();
     setColor();
     setHeight();
     targetArea = document.getElementById('card');
@@ -145,6 +144,7 @@ function toggleButtons() {
             $(this).siblings().removeClass("active");
             $(this).addClass("active");
             newNumber();
+            loc = undefined;
         }
     });
 }
@@ -161,6 +161,7 @@ function newColors() {
         setHeight();
         targetArea = document.getElementById('card');
         hammer = new Hammer(targetArea);
+        loc = undefined;
     });
 }
 
@@ -235,6 +236,7 @@ function flip() {
             side = "front";
         }
         setHeight();
+        loc = undefined;
     });
 }
 
