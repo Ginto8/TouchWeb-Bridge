@@ -229,10 +229,10 @@ function flip() {
     $("#flip").click(function() { 
         $("#card").flip('toggle');
         if(side == "front") {
-            $("#image2").attr("src", "flip2.png");
+            $("#image2").attr("src", "static/flip2.png");
             side = "back";
         } else if (side == "back") {
-            $("#image2").attr("src", "flip1.png");
+            $("#image2").attr("src", "static/flip1.png");
             side = "front";
         }
         setHeight();
