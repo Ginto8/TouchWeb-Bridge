@@ -56,7 +56,6 @@ function getRGB(y) {
     if(loc > blocks - 1) {
         loc = blocks - 1;
     }
-    console.log(loc);
     var rgb_string = $("#f" + loc).css('background-color');
     var rgb_array = rgb_string.match(/\b(\d+(\.\d*)?|\.\d+)/g);
     for(var i = 0; i < rgb_array.length; i++) {
@@ -226,17 +225,16 @@ function hoverOverlay() {
 }
 
 function flip() {
-    console.log(side);
     $("#flip").click(function() { 
         $("#card").flip('toggle');
         if(side == "front") {
-            $("#image").attr("src", "static/flip2.png");
+            $("#image2").attr("src", "flip2.png");
             side = "back";
         } else if (side == "back") {
-            $("#image").attr("src", "static/flip1.png");
+            $("#image2").attr("src", "flip1.png");
             side = "front";
         }
-        console.log(side);
+        setHeight();
     });
 }
 
