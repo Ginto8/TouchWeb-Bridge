@@ -165,12 +165,12 @@ def collider():
                 colors[ix] = colorAdd(colorMult(frac,bcolor),
                                         colorMult((1-frac),colors[ix]))
 
-        time.sleep(0.025)
+        time.sleep(0.0125)
     while sum((c[0] + c[1] + c[2])/3.0 for c in
             colors)/float(len(panels)) > 0.01:
         with colorLock:
             fade(0.98)
-        time.sleep(0.025)
+        time.sleep(0.0125)
     off()
 
 def runRgb():
@@ -277,7 +277,7 @@ def drawEvents():
             fade(max(0.95,0.983 - \
                 0.001*(len(users.keys())+len(objects))))
             for id,color,x,isPan in eventSet:
-                x = 1 - x
+                x = x
                 if x >= len(colors):
                     continue
                 if id not in pans or (isPan and id in pans and now - pans[id][1] >= 0.1):
@@ -293,7 +293,7 @@ def drawEvents():
                     pans[id] = (x,now)
                 elif id in pans:
                     del pans[id]
-        time.sleep(0.025)
+        time.sleep(0.0125)
 
 def runEffect(effect):
     with effectRunning:
@@ -325,5 +325,5 @@ while True:
     except Queue.Empty:
         pass
     if effectQueue.empty():
-        time.sleep(0.1)
+        time.sleep(0.001)
 
